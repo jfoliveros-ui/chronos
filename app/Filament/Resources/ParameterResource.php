@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\UserResource\Pages;
-use App\Filament\Resources\UserResource\RelationManagers;
-use App\Models\User;
+use App\Filament\Resources\ParameterResource\Pages;
+use App\Filament\Resources\ParameterResource\RelationManagers;
+use App\Models\Parameter;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -12,49 +12,38 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Support\Facades\FilamentIcon;
 
-class UserResource extends Resource
+class ParameterResource extends Resource
 {
-    protected static ?string $model = User::class;
-
-    protected static ?string $navigationGroup = 'Usuarios';
-
-    protected static ?int $navigationSort = 4;
-
-    protected static ?string $navigationIcon = 'icon-user';
-    /*public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::count();
-    }*/
-
+    protected static ?string $model = Parameter::class;
+    protected static ?string $navigationGroup = 'Configuración';
+    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationIcon = 'icon-parameter';
     public static function getModelLabel(): string
     {
-        return __('filament.resources.user');
+        return __('filament.resources.parameter');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('filament.resources.users');
+        return __('filament.resources.parameters');
     }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->label('Nombre')
+                Forms\Components\TextInput::make('parameter')
+                    ->label('Parámetro')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->label('Correo Electrónico')
-                    ->email()
+                Forms\Components\TextInput::make('value')
+                    ->label('Valor')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\DateTimePicker::make('email_verified_at'),
-                Forms\Components\TextInput::make('password')
-                    ->label('Contraseña')
-                    ->password()
-                    ->required()
+                Forms\Components\TextInput::make('additional_value')
+                    ->label('Valor Adicional')
                     ->maxLength(255),
             ]);
     }
@@ -63,16 +52,15 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->label('Nombre')
+                Tables\Columns\TextColumn::make('parameter')
+                    ->label('Parámetro')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email')
-                    ->label('Correo Electrónico')
+                Tables\Columns\TextColumn::make('value')
+                    ->label('Valor')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email_verified_at')
-                    ->label('Verificado')
-                    ->dateTime()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('additional_value')
+                    ->label('Valor Adicional')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado')
                     ->dateTime()
@@ -101,7 +89,7 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ManageUsers::route('/'),
+            'index' => Pages\ManageParameters::route('/'),
         ];
     }
 }
