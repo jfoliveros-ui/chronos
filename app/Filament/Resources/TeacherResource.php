@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TeacherResource\Pages;
-use App\Filament\Resources\TeacherResource\RelationManagers;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Parameter;
 use App\Models\Teacher;
@@ -12,9 +11,9 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Filament\Forms\Components\FileUpload;
+
 
 class TeacherResource extends Resource
 {
@@ -27,7 +26,8 @@ class TeacherResource extends Resource
     protected static ?string $navigationIcon = 'icon-crear_doc';
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::count();    }
+        return static::getModel()::count();
+    }
 
 
     public static function getModelLabel(): string
@@ -63,6 +63,10 @@ class TeacherResource extends Resource
                     ->label('Dirección')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\TextInput::make('origin')
+                    ->label('Origen')
+                    ->required()
+                    ->maxLength(255),
                 Forms\Components\TextInput::make('phone')
                     ->label('Teléfono')
                     ->tel()
@@ -88,25 +92,27 @@ class TeacherResource extends Resource
                     ])
                     ->native(false)
                     ->required(),
-                Forms\Components\FileUpload::make('curriculum')
-                    ->label('Hoja de Vida')
+                    FileUpload::make('curriculum')
                     ->directory('curriculums') // Carpeta donde se almacenarán los archivos
-                    ->getUploadedFileNameForStorageUsing(function (TemporaryUploadedFile $file, $record) {
-                        // Obtener el valor de document_number del registro actual
-                        $documentNumber = $record->document_number;
+                    ->getUploadedFileNameForStorageUsing(function (TemporaryUploadedFile $file, callable $get) {
+                        // Obtener el valor de document_number desde el formulario
+                        $documentNumber = $get('document_number');
+
                         // Generar el nombre del archivo basado en document_number
                         $fileName = "{$documentNumber}.pdf";
+
                         // Verificar si ya existe un archivo con el mismo nombre en la carpeta 'curriculums'
                         $filePath = "curriculums/{$fileName}";
                         if (Storage::exists($filePath)) {
                             // Si existe, eliminarlo
                             Storage::delete($filePath);
                         }
+
+                        // Guardar el archivo en la carpeta 'curriculums'
                         return $fileName; // Retornar el nombre del archivo para que se guarde correctamente
                     })
-                    ->acceptedFileTypes(['application/pdf']) // Solo acepta PDFs
-                    ->maxSize(10240) // Tamaño máximo de archivo en KB (10 MB = 10240 KB)
-                    ->deletable(true) // Permite borrar el archivo al subirlo
+                    ->acceptedFileTypes(['application/pdf']) // Solo aceptar PDFs
+                    ->maxSize(10240) // Limitar el tamaño a 10MB
             ]);
     }
 
@@ -126,6 +132,9 @@ class TeacherResource extends Resource
                 Tables\Columns\TextColumn::make('address')
                     ->label('Dirección')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('origin')
+                    ->label('Origen')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('phone')
                     ->label('Teléfono')
                     ->searchable(),
@@ -144,7 +153,7 @@ class TeacherResource extends Resource
                         // Verificar si existe el archivo
                         if ($state) {
                             // Retornar un enlace al archivo
-                            return '<a href="'.Storage::url($state).'" target="_blank">Ver Hoja de vida</a>';
+                            return '<a href="' . Storage::url($state) . '" target="_blank">Ver Hoja de vida</a>';
                         }
                         return 'No hay Hoja de vida cargada';
                     })
