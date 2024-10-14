@@ -96,12 +96,14 @@ class ScheduleResource extends Resource
                 Forms\Components\Repeater::make('dates')
                     ->label('Fechas')
                     ->schema([
-                        DatePicker::make('date')
+                        Forms\Components\DatePicker::make('date')
                             ->label('Fecha')
                             ->required(),
                     ])
                     ->minItems(1) // El mínimo de fechas que el usuario puede ingresar
                     ->required()
+                    ->grid(3)
+                    ->columnSpanFull(),
             ]);
     }
 

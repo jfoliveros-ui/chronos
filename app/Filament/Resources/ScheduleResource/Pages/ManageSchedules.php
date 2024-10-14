@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ScheduleResource\Pages;
 
 use App\Filament\Resources\ScheduleResource;
+use App\Helpers\Helper;
 use App\Models\Schedule;
 use Filament\Actions;
 use Illuminate\Http\Request;
@@ -21,18 +22,19 @@ class ManageSchedules extends ManageRecords
                     // Extraer todos los datos del formulario
                     $cetap = $data['cetap'];  // Extraer el valor de centro de tutoría
                     $semestre = $data['semester'];  // Extraer el valor de semestre
-                    $asignature = $data['subject'];  // Extraer el valor de la asignatura
+                    $subject = $data['subject'];  // Extraer el valor de la asignatura
                     $teacherId = $data['teacher_id']; // Extraer el valor de Docente
-                    $day = $data['working_day'];  // Extraer el valor de Jornada
+                    $working_day = $data['working_day'];  // Extraer el valor de Jornada
                     $mode = $data['mode'];  // Extraer el valor de Modalidad
+                    $date = $data['dates'];  // Extraer el valor de Fechas o fecha
 
                     // Iterar sobre las fechas seleccionadas
-                    foreach ($data['dates'] as $dateEntry) {
-                        $date = $dateEntry['date']; // Extraer el valor de Fecha
+                    foreach ($date as $dateEntry) {
+                        $dates = $dateEntry['date']; // Extraer el valor de Fecha
 
                         // Buscar todos los registros con el mismo teacher_id y date
                         $existingSchedules = Schedule::where('teacher_id', $teacherId)
-                            ->where('date', $date)
+                            ->where('date', $dates)
                             ->get();  // Obtener una colección de todos los registros que coinciden
 
                         // Crear arrays para almacenar todos los modos y días existentes
@@ -48,157 +50,25 @@ class ManageSchedules extends ManageRecords
                                 $existingDays[] = $existingSchedule->working_day; // Guardar cada jornada en el array
                                 $existingCetaps[] = $existingSchedule->cetap; // Guardar cada cetap en el array
                             }
-
-                            // Utilizar un switch para manejar los casos de modo
-                            switch ($data['mode']) {
-                                case 'Presencial':
-                                    // Validar si ya existe un modo 'Presencial' en los modos existentes y se intenta asignar 'Presencial' con la misma fecha y jornada
-                                    if (in_array('Presencial', $existingModes) && (in_array($day, $existingDays))) {
-                                        Notification::make()
-                                            ->title('Cruce de Horarios')
-                                            ->body("El profesor ya tiene asignada la asignatura " . $existingSchedule->subject .
-                                                " con modalidad " . $existingSchedule->mode . " el día " . $existingSchedule->date . " en la jornada " . $existingSchedule->working_day . ".")
-                                            ->danger()
-                                            ->persistent()
-                                            ->send();
-
-                                        // Detener el proceso de creación
-                                        $action->halt();
-                                    }
-
-                                    // Validar si ya existe un modo 'Virtual' y se intenta asignar 'Presencial' con la misma fecha y jornada
-                                    if (in_array('Virtual', $existingModes) && (in_array($day, $existingDays))) {
-                                        Notification::make()
-                                            ->title('Cruce de Horarios')
-                                            ->body("El profesor ya tiene asignada la asignatura " . $existingSchedule->subject .
-                                                " con modalidad " . $existingSchedule->mode . " el día " . $existingSchedule->date . " en la jornada " . $existingSchedule->working_day . ".")
-                                            ->danger()
-                                            ->persistent()
-                                            ->send();
-
-                                        // Detener el proceso de creación
-                                        $action->halt();
-                                    }
-
-                                    // Validar si ya existe un modo 'Hibrida' y se intenta asignar 'Presencial' con la misma fecha y jornada
-                                    if (in_array('Hibrida', $existingModes) && (in_array($day, $existingDays))) {
-                                        Notification::make()
-                                            ->title('Cruce de Horarios')
-                                            ->body("El profesor ya tiene asignada la asignatura " . $existingSchedule->subject .
-                                                " con modalidad " . $existingSchedule->mode . " el día " . $existingSchedule->date . " en la jornada " . $existingSchedule->working_day . ".")
-                                            ->danger()
-                                            ->persistent()
-                                            ->send();
-
-                                        // Detener el proceso de creación
-                                        $action->halt();
-                                    }
-                                    break;
-
-                                case 'Virtual':
-                                    // Validar si ya existe un modo 'Presencial' y se intenta asignar 'Virtual' con la misma fecha y jornada
-                                    if (in_array('Presencial', $existingModes) && (in_array($day, $existingDays))) {
-                                        Notification::make()
-                                            ->title('Cruce de Horarios')
-                                            ->body("El profesor ya tiene asignada la asignatura " . $existingSchedule->subject .
-                                                " con modalidad " . $existingSchedule->mode . " el día " . $existingSchedule->date . " en la jornada " . $existingSchedule->working_day . ".")
-                                            ->danger()
-                                            ->persistent()
-                                            ->send();
-
-                                        // Detener el proceso de creación
-                                        $action->halt();
-                                    }
-
-                                    // Validar si ya existe un modo 'Virtual' y se intenta asignar 'Virtual' con la misma fecha, jornada y centro de tutoria
-                                    if (in_array('Virtual', $existingModes) && (in_array($day, $existingDays)) && (in_array($cetap, $existingCetaps))) {
-                                        Notification::make()
-                                            ->title('Cruce de Horarios')
-                                            ->body("El profesor ya tiene asignada la asignatura " . $existingSchedule->subject .
-                                                " con modalidad " . $existingSchedule->mode . " el día " . $existingSchedule->date . " en la jornada " . $existingSchedule->working_day . ".")
-                                            ->danger()
-                                            ->persistent()
-                                            ->send();
-
-                                        // Detener el proceso de creación
-                                        $action->halt();
-                                    }
-                                    // Validar si ya existe un modo 'Hibrida' y se intenta asignar 'Hibrida' con la misma fecha, jornada y centro de tutoria
-                                    if (in_array('Hibrida', $existingModes) && (in_array($day, $existingDays)) && (in_array($cetap, $existingCetaps))) {
-                                        Notification::make()
-                                            ->title('Cruce de Horarios')
-                                            ->body("El profesor ya tiene asignada la asignatura " . $existingSchedule->subject .
-                                                " con modalidad " . $existingSchedule->mode . " el día " . $existingSchedule->date . " en la jornada " . $existingSchedule->working_day . ".")
-                                            ->danger()
-                                            ->persistent()
-                                            ->send();
-
-                                        // Detener el proceso de creación
-                                        $action->halt();
-                                    }
-                                    break;
-
-                                case 'Hibrida':
-                                    // Validar si ya existe un modo 'Presencial' y se intenta asignar 'hibrida' con la misma fecha y jornada
-                                    if (in_array('Presencial', $existingModes) && (in_array($day, $existingDays))) {
-                                        Notification::make()
-                                            ->title('Cruce de Horarios')
-                                            ->body("El profesor ya tiene asignada la asignatura " . $existingSchedule->subject .
-                                                " con modalidad " . $existingSchedule->mode . " el día " . $existingSchedule->date . " en la jornada " . $existingSchedule->working_day . ".")
-                                            ->danger()
-                                            ->persistent()
-                                            ->send();
-
-                                        // Detener el proceso de creación
-                                        $action->halt();
-                                    }
-
-                                    // Validar si ya existe un modo 'Hibrida' y se intenta asignar 'Hibrida' con la misma fecha y jornada
-                                    if (in_array('Hibrida', $existingModes) && (in_array($day, $existingDays))) {
-                                        Notification::make()
-                                            ->title('Cruce de Horarios')
-                                            ->body("El profesor ya tiene asignada la asignatura " . $existingSchedule->subject .
-                                                " con modalidad " . $existingSchedule->mode . " el día " . $existingSchedule->date . " en la jornada " . $existingSchedule->working_day . ".")
-                                            ->danger()
-                                            ->persistent()
-                                            ->send();
-
-                                        // Detener el proceso de creación
-                                        $action->halt();
-                                    }
-
-                                    // Validar si ya existe un modo 'Virtual' y se intenta asignar 'Hibrida' con la misma fecha, jornada y centro de tutoria
-                                    if (in_array('Virtual', $existingModes) && (in_array($day, $existingDays)) && (in_array($cetap, $existingCetaps))) {
-                                        Notification::make()
-                                            ->title('Cruce de Horarios')
-                                            ->body("El profesor ya tiene asignada la asignatura " . $existingSchedule->subject .
-                                                " con modalidad " . $existingSchedule->mode . " el día " . $existingSchedule->date . " en la jornada " . $existingSchedule->working_day . ".")
-                                            ->danger()
-                                            ->persistent()
-                                            ->send();
-
-                                        // Detener el proceso de creación
-                                        $action->halt();
-                                    }
-                                    break;
-                                default:
-                                    break;
+                            // Llamar a la función de validación
+                            if (!Helper::validarConflictos($mode, $cetap, $existingModes, $working_day, $existingDays, $existingCetaps, $existingSchedule, $action)) {
+                                continue;
                             }
                         }
                         // Si no hay conflictos, guardar un registro por cada fecha
                         Schedule::create([
                             'teacher_id' => $teacherId,
-                            'date' => $date,
-                            'working_day' => $day,
+                            'date' => $dates,
+                            'working_day' => $working_day,
                             'cetap' => $cetap,
                             'mode' => $mode,
-                            'subject' => $asignature,
+                            'subject' => $subject,
                             'semester' => $semestre,
                         ]);
                         Notification::make()
                             ->title('Asignación de Horarios')
-                            ->body("Se ha asignada la asignatura " . $asignature .
-                                " con modalidad " . $mode . " el día " . $date . " en la jornada " . $day . ".")
+                            ->body("Se ha asignada la asignatura " . $subject .
+                                " con modalidad " . $mode . " el día " . $dates . " en la jornada " . $working_day . ".")
                             ->info()
                             ->persistent()
                             ->send();
@@ -208,5 +78,4 @@ class ManageSchedules extends ManageRecords
                 })
         ];
     }
-
 }
