@@ -22,8 +22,7 @@ class Helper
                         ->persistent()
                         ->send();
 
-                    // Detener el proceso de creación
-                    $action->halt();
+                        return true; // Conflicto detectado
                 }
 
                 // Validar si ya existe un modo 'Virtual' y se intenta asignar 'Presencial' con la misma fecha y working_day
@@ -37,7 +36,7 @@ class Helper
                         ->send();
 
                     // Detener el proceso de creación
-                    $action->halt();
+                    return true; // Conflicto detectado
                 }
 
                 // Validar si ya existe un modo 'Hibrida' y se intenta asignar 'Presencial' con la misma fecha y working_day
@@ -51,7 +50,7 @@ class Helper
                         ->send();
 
                     // Detener el proceso de creación
-                    $action->halt();
+                    return true; // Conflicto detectado
                 }
                 break;
 
@@ -66,7 +65,7 @@ class Helper
                         ->persistent()
                         ->send();
                     // Detener el proceso de creación
-                    $action->halt();
+                    return true; // Conflicto detectado
                 }
 
                 // Validar si ya existe un modo 'Virtual' y se intenta asignar 'Virtual' con la misma fecha, working_day y centro de tutoria
@@ -80,7 +79,7 @@ class Helper
                         ->send();
 
                     // Detener el proceso de creación
-                    $action->halt();
+                    return true; // Conflicto detectado
                 }
                 // Validar si ya existe un modo 'Hibrida' y se intenta asignar 'Hibrida' con la misma fecha, working_day y centro de tutoria
                 if (in_array('Hibrida', $existingModes) && (in_array($working_day, $existingworking_days)) && (in_array($cetap, $existingCetaps))) {
@@ -93,7 +92,7 @@ class Helper
                         ->send();
 
                     // Detener el proceso de creación
-                    $action->halt();
+                    return true; // Conflicto detectado
                 }
                 break;
 
@@ -109,7 +108,7 @@ class Helper
                         ->send();
 
                     // Detener el proceso de creación
-                    $action->halt();
+                    return true; // Conflicto detectado
                 }
 
                 // Validar si ya existe un modo 'Hibrida' y se intenta asignar 'Hibrida' con la misma fecha y working_day
@@ -123,7 +122,7 @@ class Helper
                         ->send();
 
                     // Detener el proceso de creación
-                    $action->halt();
+                    return true; // Conflicto detectado
                 }
 
                 // Validar si ya existe un modo 'Virtual' y se intenta asignar 'Hibrida' con la misma fecha, working_day y centro de tutoria
@@ -137,7 +136,7 @@ class Helper
                         ->send();
 
                     // Detener el proceso de creación
-                    $action->halt();
+                    return true; // Conflicto detectado
                 }
                 break;
             default:
