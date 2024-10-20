@@ -21,7 +21,7 @@ class ScheduleResource extends Resource
     protected static ?string $model = Schedule::class;
     protected static ?string $navigationLabel = 'Asignar Horario';
     protected static ?string $navigationGroup = 'Asignaciones';
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 7;
 
     protected static ?string $navigationIcon = 'icon-asig_hor';
 

@@ -12,6 +12,7 @@ return [
         'parameters' => 'Parametros',
         'user' => 'Usuario',
         'users' => 'Usuarios',
+        'Cosumed Hours' => 'Viáticos',
     ],
     'pages' => [
         'calendar' => 'Calendar',
