@@ -4,15 +4,24 @@ namespace App\Filament\Resources\ScheduleResource\Pages;
 
 use App\Filament\Resources\ScheduleResource;
 use App\Helpers\Helper;
+use App\Models\CosumedHours;
+use App\Models\Parameter;
 use App\Models\Schedule;
+use App\Models\Teacher;
+use App\Services\ScheduleService;
 use Filament\Notifications\Actions\Action;
 use Filament\Actions;
 use Illuminate\Http\Request;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class ManageSchedules extends ManageRecords
 {
+
+    use ScheduleService;
+
     protected static string $resource = ScheduleResource::class;
 
     protected function getHeaderActions(): array
@@ -66,7 +75,7 @@ class ManageSchedules extends ManageRecords
                             $dates = $dateEntry['date'];
 
                             // Guardar un registro por cada fecha
-                            Schedule::create([
+                            $scheduleCreate = Schedule::create([
                                 'teacher_id' => $teacherId,
                                 'date' => $dates,
                                 'working_day' => $working_day,
@@ -75,6 +84,50 @@ class ManageSchedules extends ManageRecords
                                 'subject' => $subject,
                                 'semester' => $semestre,
                             ]);
+
+                            Log::notice('Creado', [$scheduleCreate]);
+
+                            if($scheduleCreate){
+                                $cut = $this->calculateCut($dateEntry);
+
+                                 // Obtener información del profesor
+                                $infoTeacher = Teacher::select('categorie', 'pensioner')
+                                ->where('id', $teacherId)
+                                ->first();
+
+                                // Obtener valor de la hora según categoría
+                                $valueHour = Parameter::where('value', $infoTeacher->categorie)->first();
+
+                                $yearList = date('Y', strtotime($dateEntry['date']));
+                                // Inicializar datos de horas consumidas
+                                $consumedHour = [
+                                    'schedules_id' => $scheduleCreate->id ?? null,
+                                    'consumed_hours' => 4,
+                                    'cut' => $cut,
+                                    'year' => $yearList,
+                                    'categorie' => $infoTeacher->categorie,
+                                    'resolution' => 'LLL',
+                                    'value_hour' => $valueHour->additional_value
+                                ];
+
+                                // Calcular si es pensionado
+                                if ($infoTeacher->pensioner == "Si") {
+                                    $pensioner = Parameter::where('parameter', 'PENSIONADO')->first();
+                                    $consumedHour['value_pensioner'] = $pensioner->value;
+                                } else {
+                                    $consumedHour['value_pensioner'] = 0;
+                                }
+
+                                // Calcula el valor total de las horas
+                                $subtotal = intval($consumedHour['value_hour']) * intval($consumedHour['consumed_hours']);
+                                $total = (($subtotal * $consumedHour['value_pensioner']) / 100) + $subtotal;
+                                $consumedHour['value_total'] = $total;
+
+                                Log::notice('consumedHour', [$consumedHour]);
+
+                                CosumedHours::create($consumedHour);
+
+                            }
 
                             Notification::make()
                                 ->title('Asignación de Horarios')
