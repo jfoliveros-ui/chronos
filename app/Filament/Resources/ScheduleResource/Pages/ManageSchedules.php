@@ -49,23 +49,48 @@ class ManageSchedules extends ManageRecords
                             ->where('date', $dates)
                             ->get();  // Obtener una colección de todos los registros que coinciden
 
+                        // Buscar todos los registros con el mismo cetap y date
+                        $existingCetap = Schedule::where('cetap', $cetap)
+                            ->where('date', $dates)
+                            ->where('working_day', $working_day)
+                            ->where('semester', $semestre)
+                            ->get();  // Ob tener una colección de todos los registros que coinciden
+
                         // Crear arrays para almacenar todos los modos y días existentes
                         $existingModes = []; // Guarda los modos del programa
                         $existingDays = []; // Guardar las jornadas del programa
                         $existingCetaps = []; // Guardar los centros de tutoria del programa
 
-                        // Si existen asignaciones previas ($existingSchedules no está vacío)
-                        if ($existingSchedules->isNotEmpty()) {
-                            // Iterar sobre todos los horarios existentes y guardar los modos y días en arrays
-                            foreach ($existingSchedules as $existingSchedule) {
-                                $existingModes[] = $existingSchedule->mode;   // Guardar cada modo en el array
-                                $existingDays[] = $existingSchedule->working_day; // Guardar cada jornada en el array
-                                $existingCetaps[] = $existingSchedule->cetap; // Guardar cada cetap en el array
-                            }
-                            // Llamar a la función de validación
-                            if (!Helper::validarConflictos($mode, $cetap, $existingModes, $working_day, $existingDays, $existingCetaps, $existingSchedule, $action)) {
-                                $hasConflict = true;
-                                continue; // Romper el bucle si hay conflicto
+                        if ($existingCetap->isNotEmpty()) {
+                            Notification::make()
+                                ->title('Conflicto de horario')
+                                ->body("El cetap " . $cetap . " tiene una asignatura " . $subject .
+                                    " con modalidad " . $mode . " el día " . $dates . " en la jornada " . $working_day . " en el semestre : " . $semestre . "")
+                                ->icon('icon-Alerta')
+                                ->actions([
+                                    Action::make('Ver Calendario')
+                                        ->button()
+                                        ->url(route('filament.admin.pages.calendar')) // Aquí defines la ruta o recurso
+                                        ->openUrlInNewTab(true) // Redirige otra pestaña
+                                ])
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                            $action->halt();
+                        } else {
+                            // Si existen asignaciones previas ($existingSchedules no está vacío)
+                            if ($existingSchedules->isNotEmpty()) {
+                                // Iterar sobre todos los horarios existentes y guardar los modos y días en arrays
+                                foreach ($existingSchedules as $existingSchedule) {
+                                    $existingModes[] = $existingSchedule->mode;   // Guardar cada modo en el array
+                                    $existingDays[] = $existingSchedule->working_day; // Guardar cada jornada en el array
+                                    $existingCetaps[] = $existingSchedule->cetap; // Guardar cada cetap en el array
+                                }
+                                // Llamar a la función de validación
+                                if (!Helper::validarConflictos($mode, $cetap, $existingModes, $working_day, $existingDays, $existingCetaps, $existingSchedule, $action)) {
+                                    $hasConflict = true;
+                                    continue; // Romper el bucle si hay conflicto
+                                }
                             }
                         }
                     }
@@ -87,13 +112,13 @@ class ManageSchedules extends ManageRecords
 
                             Log::notice('Creado', [$scheduleCreate]);
 
-                            if($scheduleCreate){
+                            if ($scheduleCreate) {
                                 $cut = $this->calculateCut($dateEntry);
 
-                                 // Obtener información del profesor
+                                // Obtener información del profesor
                                 $infoTeacher = Teacher::select('categorie', 'pensioner')
-                                ->where('id', $teacherId)
-                                ->first();
+                                    ->where('id', $teacherId)
+                                    ->first();
 
                                 // Obtener valor de la hora según categoría
                                 $valueHour = Parameter::where('value', $infoTeacher->categorie)->first();
@@ -126,7 +151,6 @@ class ManageSchedules extends ManageRecords
                                 Log::notice('consumedHour', [$consumedHour]);
 
                                 CosumedHours::create($consumedHour);
-
                             }
 
                             Notification::make()
@@ -151,8 +175,8 @@ class ManageSchedules extends ManageRecords
                             ->danger()
                             ->persistent()
                             ->send();
-                            //detiene el proceso para que no se cierre el formulario
-                            $action->halt();
+                        //detiene el proceso para que no se cierre el formulario
+                        $action->halt();
                     }
                     //se envia la accion de cancelar para que no guarde los datos ya que se realizarón los cambios
                     $action->cancel();
