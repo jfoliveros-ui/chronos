@@ -7,6 +7,7 @@ use App\Filament\Resources\ScheduleResource\RelationManagers;
 use App\Models\Schedule;
 use App\Models\Parameter;
 use App\Models\Subject;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -15,6 +16,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 
 class ScheduleResource extends Resource
 {
@@ -83,8 +86,9 @@ class ScheduleResource extends Resource
                     ->label('Jornada')
                     ->options(
                         Parameter::where('parameter', 'JORNADA')
-                            ->pluck('value', 'value') // Muestra el valor de value y guarda el valor de value
+                            ->pluck('value', key: 'value') // Muestra el valor de value y guarda el valor de value
                     )
+                    ->reactive()
                     ->required(),
                 Forms\Components\Select::make('mode')
                     ->label('Modalidad')
@@ -98,7 +102,32 @@ class ScheduleResource extends Resource
                     ->schema([
                         Forms\Components\DatePicker::make('date')
                             ->label('Fecha')
-                            ->required(),
+                            ->required()
+                            ->reactive()
+                            ->native(false)
+                            ->disabledDates(function (Get $get) {
+                                // Obtiene el valor del campo 'working_day' fuera del Repeater
+                                $workingDay = $get('../../working_day');
+
+                                // Si la jornada es "Fin de Semana", deshabilita todas las fechas excepto los viernes
+                                if ($workingDay === 'Fin de Semana') {
+                                    // Crear un array para deshabilitar todas las fechas excepto los viernes
+                                    $disabledDates = [];
+
+                                    // Deshabilitar todos los días del mes
+                                    for ($day = 1; $day <= 31; $day++) {
+                                        $date = Carbon::now()->startOfMonth()->day($day);
+                                        if ($date->isValid() && !$date->isFriday()) {
+                                            $disabledDates[] = $date->format('Y-m-d'); // Agregar el día si no es viernes
+                                        }
+                                    }
+
+                                    return $disabledDates; // Retornar las fechas deshabilitadas
+                                }
+
+                                // Si no es "Fin de Semana", no deshabilitar ninguna fecha
+                                return [];
+                            }),
                     ])
                     ->minItems(1) // El mínimo de fechas que el usuario puede ingresar
                     ->required()
