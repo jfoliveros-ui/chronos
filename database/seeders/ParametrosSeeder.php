@@ -45,6 +45,11 @@ class ParametrosSeeder extends Seeder
                 'additional_value' => 'Jornada noche',
             ],
             [
+                'parameter' => 'JORNADA',
+                'value' => 'Fin de Semana',
+                'additional_value' => 'Jornada Fin de Semana',
+            ],
+            [
                 'parameter' => 'SEMESTRE',
                 'value' => '1A',
                 'additional_value' => 'Primero A',

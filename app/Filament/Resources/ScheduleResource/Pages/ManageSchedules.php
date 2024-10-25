@@ -9,6 +9,7 @@ use App\Models\Parameter;
 use App\Models\Schedule;
 use App\Models\Teacher;
 use App\Services\ScheduleService;
+use ErrorException;
 use Filament\Notifications\Actions\Action;
 use Filament\Actions;
 use Illuminate\Http\Request;
@@ -71,71 +72,60 @@ class ManageSchedules extends ManageRecords
                     }
                     // Si no hay conflicto, proceder a guardar
                     if (!$hasConflict) {
-                        foreach ($date as $dateEntry) {
-                            $dates = $dateEntry['date'];
-
-                            // Guardar un registro por cada fecha
-                            $scheduleCreate = Schedule::create([
-                                'teacher_id' => $teacherId,
-                                'date' => $dates,
-                                'working_day' => $working_day,
-                                'cetap' => $cetap,
-                                'mode' => $mode,
-                                'subject' => $subject,
-                                'semester' => $semestre,
-                            ]);
-
-                            Log::notice('Creado', [$scheduleCreate]);
-
-                            if($scheduleCreate){
-                                $cut = $this->calculateCut($dateEntry);
-
-                                 // Obtener información del profesor
-                                $infoTeacher = Teacher::select('categorie', 'pensioner')
-                                ->where('id', $teacherId)
-                                ->first();
-
-                                // Obtener valor de la hora según categoría
-                                $valueHour = Parameter::where('value', $infoTeacher->categorie)->first();
-
-                                $yearList = date('Y', strtotime($dateEntry['date']));
-                                // Inicializar datos de horas consumidas
-                                $consumedHour = [
-                                    'schedules_id' => $scheduleCreate->id ?? null,
-                                    'consumed_hours' => 4,
-                                    'cut' => $cut,
-                                    'year' => $yearList,
-                                    'categorie' => $infoTeacher->categorie,
-                                    'resolution' => 'LLL',
-                                    'value_hour' => $valueHour->additional_value
+                        try{
+                            DB::beginTransaction();
+                            $scheduleSaveArray = [];
+                           
+                            foreach ($date as $dateEntry) {
+                                $scheduleCreate = null;
+                                //crear datos para almacenar como schedule
+                                $dataSchedule = [
+                                    'teacher_id' => $teacherId,
+                                    'date' => $dateEntry['date'],
+                                    'working_day' => $working_day,
+                                    'cetap' => $cetap,
+                                    'mode' => $mode,
+                                    'subject' => $subject,
+                                    'semester' => $semestre,
                                 ];
 
-                                // Calcular si es pensionado
-                                if ($infoTeacher->pensioner == "Si") {
-                                    $pensioner = Parameter::where('parameter', 'PENSIONADO')->first();
-                                    $consumedHour['value_pensioner'] = $pensioner->value;
+                                if($working_day == "Fin de Semana"){
+                                    // Guardar un registro por cada fecha
+                                    $scheduleCreate = $this->CreateJornadeFinOworkingDay($dataSchedule);
+                                    $scheduleSaveArray[] = $scheduleCreate;
+                                    Log::notice('Creado fin de semana', [$scheduleCreate]);
                                 } else {
-                                    $consumedHour['value_pensioner'] = 0;
+                                    // Guardar un registro por cada fecha
+                                    $scheduleCreate = $this->createSchedule($dataSchedule);
+                                    $scheduleSaveArray[] = $scheduleCreate;
+                                    Log::notice('Creado', [$scheduleCreate]);
                                 }
-
-                                // Calcula el valor total de las horas
-                                $subtotal = intval($consumedHour['value_hour']) * intval($consumedHour['consumed_hours']);
-                                $total = (($subtotal * $consumedHour['value_pensioner']) / 100) + $subtotal;
-                                $consumedHour['value_total'] = $total;
-
-                                Log::notice('consumedHour', [$consumedHour]);
-
-                                CosumedHours::create($consumedHour);
 
                             }
 
+                            if (in_array(null, $scheduleSaveArray, true)) {
+                                DB::rollback();
+                                $action->halt();
+                            } else {
+                                DB::commit();
+                            }
+
+                            
+
+                        } catch (ErrorException $e){
+                            DB::rollback();
+
+                            Log::notice('Error al guardar', ["message" => $e->getMessage(), 
+                            "line" => $e->getLine(),
+                            "controller" => $e->getFile()]);
                             Notification::make()
-                                ->title('Asignación de Horarios')
-                                ->body("Se ha asignado la asignatura " . $subject .
-                                    " con modalidad " . $mode . " el día " . $dates . " en la jornada " . $working_day . ".")
-                                ->info()
-                                ->persistent()
-                                ->send();
+                            ->title('Error al intental guardar')
+                            ->icon('icon-Alerta')
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                            //detiene el proceso para que no se cierre el formulario
+                            $action->halt();
                         }
                     } else {
                         // Notificación o mensaje si hay conflicto
