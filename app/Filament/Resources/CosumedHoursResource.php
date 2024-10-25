@@ -37,23 +37,30 @@ class CosumedHoursResource extends Resource
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('cut')
+                    ->label('Corte')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('year')
+                    ->label('Año')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('categorie')
                     ->required()
+                    ->label('Categoría')
                     ->maxLength(255),
                 Forms\Components\TextInput::make('value_hour')
+                    ->label('Valor Hora')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('resolution')
+                    ->label('Resolución')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('value_pensioner')
+                    ->label('Valor Pensionado')
                     ->maxLength(255),
                 Forms\Components\TextInput::make('value_total')
+                    ->label('Total')
                     ->maxLength(255),
             ]);
     }
@@ -62,24 +69,36 @@ class CosumedHoursResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('schedules_id')
-                    ->numeric()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('schedule.teacher.full_name')
+                    ->label('Docente')  // Etiqueta personalizada para la columna
+                    ->sortable(),       // Hace que la columna sea ordenable
+                Tables\Columns\TextColumn::make('schedule.date')
+                    ->label('Fecha')     // Etiqueta personalizada para la columna
+                    ->date(('d/m'))             // Formato de fecha (puedes agregar un formato personalizado si deseas)
+                    ->sortable(),        // Hace que la columna sea ordenable
                 Tables\Columns\TextColumn::make('consumed_hours')
+                    ->label('Horas Consumidas')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('cut')
+                    ->label('Corte')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('year')
+                    ->label('Año')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('categorie')
+                    ->label('Categoría')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('value_hour')
+                    ->label('Valor Hora')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('resolution')
+                    ->label('Resolución')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('value_pensioner')
+                    ->label('Valor Pensionado')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('value_total')
+                    ->label('Total')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

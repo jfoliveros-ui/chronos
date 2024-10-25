@@ -20,4 +20,9 @@ class CosumedHours extends Model
         'value_pensioner',
         'value_total'
     ];
+    // Relación con Schedule
+    public function schedule()
+    {
+        return $this->belongsTo(Schedule::class, 'schedules_id');
+    }
 }

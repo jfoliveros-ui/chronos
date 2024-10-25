@@ -66,7 +66,7 @@ trait ScheduleService {
         if ($teacherPensioner == "Si") {
             $pensioner = Parameter::where('parameter', 'PENSIONADO')->first();
             return $pensioner->value;
-        } 
+        }
 
         return 0;
     }
@@ -113,10 +113,10 @@ trait ScheduleService {
         } else {
             return $scheduleSaveArray;
         }
-        
+
     }
 
-   
+
 
     /**
      * Función para almacenar la asignación de horario en base de datos
@@ -175,7 +175,7 @@ trait ScheduleService {
                 'cut' => $cut,
                 'year' => $yearList,
                 'categorie' => $infoTeacher->categorie,
-                'resolution' => 'LLL',
+                'resolution' => '123',
                 'value_hour' => $valueHour->additional_value
             ];
 
