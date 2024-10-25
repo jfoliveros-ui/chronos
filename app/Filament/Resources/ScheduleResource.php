@@ -104,6 +104,8 @@ class ScheduleResource extends Resource
                             ->label('Fecha')
                             ->required()
                             ->reactive()
+                            ->displayFormat('d/m/Y')
+                            ->placeholder('Seleccionar Fecha')
                             ->native(false)
                             ->disabledDates(function (Get $get) {
                                 // Obtiene el valor del campo 'working_day' fuera del Repeater
