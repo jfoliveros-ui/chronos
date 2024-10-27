@@ -63,7 +63,8 @@ class UserResource extends Resource
                     ->label('Contraseña')
                     ->password()
                     ->required()
-                    ->dehydrateStateUsing(fn ($state) => Hash::make($state)) // Encripta aquí
+                    ->dehydrateStateUsing(fn ($state) => Hash::make($state))
+                    ->dehydrated(fn ($state) => filled($state))
                     ->maxLength(255),
             ]);
     }

@@ -52,9 +52,4 @@ class User extends Authenticatable implements FilamentUser
         return true;
     }
 
-    // Mutator para encriptar la contraseña
-    public function setPasswordAttribute($value)
-    {
-        $this->attributes['password'] = Hash::make($value);
-    }
 }
