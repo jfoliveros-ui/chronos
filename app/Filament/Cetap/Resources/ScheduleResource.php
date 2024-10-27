@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Teacher\Resources;
+namespace App\Filament\Cetap\Resources;
 
-use App\Filament\Teacher\Resources\ScheduleResource\Pages;
-use App\Filament\Teacher\Resources\ScheduleResource\RelationManagers;
+use App\Filament\Cetap\Resources\ScheduleResource\Pages;
+use App\Filament\Cetap\Resources\ScheduleResource\RelationManagers;
 use App\Models\Schedule;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -18,16 +18,8 @@ class ScheduleResource extends Resource
 {
     protected static ?string $model = Schedule::class;
 
-    protected static ?string $navigationIcon = 'icon-calendar';
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'Consulta de Horario';
-    
-    public static function getPluralModelLabel(): string
-    {
-        return __('filament.resources.schedules');
-    }
-
-    //función para que solo muestre los registros del usuario autenticado
     public static function getEloquentQuery(): Builder
     {
         // Obtener el nombre completo del usuario autenticado
@@ -44,43 +36,55 @@ class ScheduleResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
-            ->schema([]);
+            ->schema([
+                Forms\Components\TextInput::make('teacher_id')
+                    ->required()
+                    ->numeric(),
+                Forms\Components\TextInput::make('cetap')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('semester')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('subject')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('mode')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\DatePicker::make('date')
+                    ->required(),
+                Forms\Components\TextInput::make('working_day')
+                    ->required()
+                    ->maxLength(255),
+            ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                /*Tables\Columns\TextColumn::make('teacher.full_name')
-                    ->label('Docente')
-                    ->sortable(),*/
-
+                Tables\Columns\TextColumn::make('teacher_id')
+                    ->numeric()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('cetap')
-                    ->label('Centro de Tutoría')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('semester')
-                    ->label('Semestre')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('subject')
-                    ->label('Materia')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('date')
-                    ->label('Fecha')
-                    ->date('d/m')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('working_day')
-                    ->label('Jornada')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('mode')
-                    ->label('Modalidad')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('date')
+                    ->date()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('working_day')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Creado')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Actualizado')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -88,8 +92,12 @@ class ScheduleResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([])
-            ->bulkActions([]);
+            ->actions([
+
+            ])
+            ->bulkActions([
+
+            ]);
     }
 
     public static function getPages(): array

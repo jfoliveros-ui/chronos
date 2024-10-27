@@ -17,35 +17,29 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
 
-class AdminPanelProvider extends PanelProvider
+class CetapPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->default()
-            ->id('admin')
-            ->path('admin')
+            ->id('cetap')
+            ->path('cetap')
             ->login()
-            ->plugins([
-                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make()
-            ])
             ->colors([
-                'primary' =>'#F28B32',
+                'primary' => Color::Amber,
             ])
             ->brandLogo(asset('img/logo.jpg'))
             ->brandLogoHeight(fn () => auth()->check() ? '4rem' : '5.5rem')
-            ->viteTheme('resources/css/filament/admin/theme.css')
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ->discoverResources(in: app_path('Filament/Cetap/Resources'), for: 'App\\Filament\\Cetap\\Resources')
+            ->discoverPages(in: app_path('Filament/Cetap/Pages'), for: 'App\\Filament\\Cetap\\Pages')
             ->pages([
                 Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->discoverWidgets(in: app_path('Filament/Cetap/Widgets'), for: 'App\\Filament\\Cetap\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                //Widgets\FilamentInfoWidget::class,
+                Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -60,10 +54,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ])
-            ->plugin(
-                FilamentFullCalendarPlugin::make()
-                    ->selectable()
-            );
+            ]);
     }
 }

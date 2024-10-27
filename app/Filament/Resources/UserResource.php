@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Hash;
 
 class UserResource extends Resource
 {
@@ -50,11 +51,19 @@ class UserResource extends Resource
                     ->email()
                     ->required()
                     ->maxLength(255),
+                    forms\Components\Select::make('roles')
+                    ->label('Rol')
+                    ->relationship('roles', 'name')
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->required(),
                 Forms\Components\DateTimePicker::make('email_verified_at'),
                 Forms\Components\TextInput::make('password')
                     ->label('Contraseña')
                     ->password()
                     ->required()
+                    ->dehydrateStateUsing(fn ($state) => Hash::make($state)) // Encripta aquí
                     ->maxLength(255),
             ]);
     }
@@ -69,6 +78,8 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->label('Correo Electrónico')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('roles.name')
+                    ->label('Rol'),
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->label('Verificado')
                     ->dateTime()
