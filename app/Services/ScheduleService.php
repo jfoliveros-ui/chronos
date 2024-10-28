@@ -1,10 +1,12 @@
 <?php
 namespace App\Services;
 
+use App\Helpers\Helper;
 use App\Models\CosumedHours;
 use App\Models\Parameter;
 use App\Models\Schedule;
 use App\Models\Teacher;
+use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -34,11 +36,10 @@ trait ScheduleService {
      * Función para crear la notificación del guardado
      * @param Object
      */
-    public function notificationSave($schedule){
+    public function notificationSave($body){
         Notification::make()
         ->title('Asignación de Horarios')
-        ->body("Se ha asignado la asignatura " . $schedule->subject .
-            " con modalidad " . $schedule->mode . " el día " . $schedule->dates . " en la jornada " . $schedule->working_day . ".")
+        ->body($body)
         ->info()
         ->send();
     }
@@ -99,15 +100,8 @@ trait ScheduleService {
             $data['date'] = $dates->addDay(); // Sumar un día
             $data['working_day'] = 'Mañana';
             $scheduleSaveArray[] = $this->createSchedule($data);
-        } /*elseif ($dayOfWeek == '6') {
-            $this->createSchedule($data, 'Mañana');
-            $this->createSchedule($data, 'Tarde');
-        } elseif ($dayOfWeek == '0') {
-            $this->createSchedule($data, 'Mañana');
-        }*/
+        } 
 
-
-        Log::notice('Creado Schedule fin de semana', [$scheduleSaveArray]);
         if (in_array(null, $scheduleSaveArray, true)) {
             return null;
         } else {
@@ -125,16 +119,6 @@ trait ScheduleService {
      */
     public function createSchedule($data)
     {
-        //Validar si existe el mismo teacher y fecha asignado con anterioridad
-        $existingSchedules = Schedule::where('teacher_id', $data['teacher_id'])
-                            ->where('date', $data['date'])
-                            ->where('working_day', $data['working_day'])
-                            ->first();
-
-        if($existingSchedules){
-            $this->notificationSaveValidation((object) $data);
-            return null;
-        }
 
         $scheduleCreate = Schedule::create([
             'teacher_id' => $data['teacher_id'],
@@ -148,11 +132,77 @@ trait ScheduleService {
 
         if($scheduleCreate){
             $this->createConsumHours($scheduleCreate, $data);
-            $this->notificationSave($scheduleCreate);
         }
 
         return $scheduleCreate;
+    }
 
+    /**
+     * Realiza validación si lo registro ya existen y devuelve una notificación con una variable boolean
+     * @param Array $data
+     * @return boolean
+     */
+    public function validateExistShedule($data){
+
+        $body = "";
+       
+        foreach ($data['dates'] as $dateEntry) {
+            $dates = $dateEntry['date']; // Extraer el valor de Fecha
+
+            // Buscar todos los registros con el mismo cetap y date
+            $existingCetap = Schedule::where('cetap', $data['cetap'])
+                ->where('date', $dates)
+                ->where('working_day', $data['working_day'])
+                ->where('semester', $data['semester'])
+                ->first();
+
+            if($existingCetap){
+                if(empty($body)){
+                    $body .= "El cetap " . $data['cetap'] . " tiene una asignatura " . $data['subject'] .
+                    " con modalidad " . $data['mode'] . " los dias: ";
+                }
+                
+                $body .= "<br> - " . $existingCetap->date . " en la jornada " . 
+                $existingCetap->working_day . " en el semestre : " . $existingCetap->semester . "";
+               
+            } else {
+
+                // Buscar todos los registros con el mismo teacher_id y date
+                $existingSchedules = Schedule::where('teacher_id', $data['teacher_id'])
+                ->where('date', $dates)
+                ->first(); 
+
+                if ($existingSchedules){
+                    if(empty($body)){
+                        $body .= "El cetap " . $data['cetap'] . " tiene una asignatura " . $data['subject'] .
+                            " con modalidad " . $data['mode'] . " los dias: ";
+                    }
+                   
+                    $body .= "<br> - " . $existingSchedules->date . " en la jornada " . 
+                    $existingSchedules->working_day . " en el semestre : " . $existingSchedules->semester . "";
+                }
+            }            
+        }
+     
+        if($body !== ""){
+            Notification::make()
+            ->title('Conflicto de horario')
+            ->body($body)
+            ->icon('icon-Alerta')
+            ->actions([
+                Action::make('Ver Calendario')
+                    ->button()
+                    ->url(route('filament.admin.pages.calendar')) // Aquí defines la ruta o recurso
+                    ->openUrlInNewTab(true) // Redirige otra pestaña
+            ])
+            ->danger()
+            ->persistent()
+            ->send();
+
+            return false;
+        } else {
+            return true;
+        }
     }
 
     public function createConsumHours($scheduleCreate, $dataSchedule){
@@ -193,4 +243,5 @@ trait ScheduleService {
 
         }
     }
+
 }

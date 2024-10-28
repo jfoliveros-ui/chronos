@@ -38,6 +38,7 @@ class ManageSchedules extends ManageRecords
                     $working_day = $data['working_day'];  // Extraer el valor de Jornada
                     $mode = $data['mode'];  // Extraer el valor de Modalidad
                     $date = $data['dates'];  // Extraer el valor de Fechas o fecha
+
                     // Variable para rastrear si hay algún conflicto
                     $hasConflict = false;
 
@@ -62,23 +63,8 @@ class ManageSchedules extends ManageRecords
                         $existingDays = []; // Guardar las jornadas del programa
                         $existingCetaps = []; // Guardar los centros de tutoria del programa
 
-                        if ($existingCetap->isNotEmpty()) {
-                            Notification::make()
-                                ->title('Conflicto de horario')
-                                ->body("El cetap " . $cetap . " tiene una asignatura " . $subject .
-                                    " con modalidad " . $mode . " el día " . $dates . " en la jornada " . $working_day . " en el semestre : " . $semestre . "")
-                                ->icon('icon-Alerta')
-                                ->actions([
-                                    Action::make('Ver Calendario')
-                                        ->button()
-                                        ->url(route('filament.admin.pages.calendar')) // Aquí defines la ruta o recurso
-                                        ->openUrlInNewTab(true) // Redirige otra pestaña
-                                ])
-                                ->danger()
-                                ->persistent()
-                                ->send();
-                            $action->halt();
-                        } else {
+                        if (!$existingCetap->isNotEmpty()) {
+                           
                             // Si existen asignaciones previas ($existingSchedules no está vacío)
                             if ($existingSchedules->isNotEmpty()) {
                                 // Iterar sobre todos los horarios existentes y guardar los modos y días en arrays
@@ -95,12 +81,16 @@ class ManageSchedules extends ManageRecords
                             }
                         }
                     }
-                    // Si no hay conflicto, proceder a guardar
-                    if (!$hasConflict) {
-                        try{
-                            DB::beginTransaction();
-                            $scheduleSaveArray = [];
-                           
+                   
+                    try{
+                        DB::beginTransaction();
+                        $scheduleSaveArray = [];
+
+                        //REalizar validación antes de guardar
+                        $validate = $this->validateExistShedule($data);
+
+                        
+                        if($validate || $hasConflict){
                             foreach ($date as $dateEntry) {
                                 $scheduleCreate = null;
                                 //crear datos para almacenar como schedule
@@ -113,46 +103,56 @@ class ManageSchedules extends ManageRecords
                                     'subject' => $subject,
                                     'semester' => $semestre,
                                 ];
-
+    
+                                
+    
                                 if($working_day == "Fin de Semana"){
                                     // Guardar un registro por cada fecha
                                     $scheduleCreate = $this->CreateJornadeFinOworkingDay($dataSchedule);
                                     $scheduleSaveArray[] = $scheduleCreate;
-                                    Log::notice('Creado fin de semana', [$scheduleCreate]);
                                 } else {
                                     // Guardar un registro por cada fecha
                                     $scheduleCreate = $this->createSchedule($dataSchedule);
                                     $scheduleSaveArray[] = $scheduleCreate;
-                                    Log::notice('Creado', [$scheduleCreate]);
                                 }
-
+    
                             }
-
+    
                             if (in_array(null, $scheduleSaveArray, true)) {
                                 DB::rollback();
                                 $action->halt();
                             } else {
+                                $body = "";
+                                
+                                foreach($scheduleSaveArray as $sheduleSave){
+
+                                    if(is_array($sheduleSave)){
+                                        foreach($sheduleSave as $sheduleS){
+                                            if(@$sheduleS->subject && @$sheduleS->mode && @$sheduleS->date && @$sheduleS->working_day){
+                                                $body .= "<br> - Se ha asignado la asignatura " . $sheduleS->subject .
+                                                " con modalidad " . $sheduleS->mode . " el día " . $sheduleS->date . " en la jornada " . $sheduleS->working_day . ".";
+                                            }  
+                                        }
+                                    } else {
+                                        if(@$sheduleSave->subject && @$sheduleSave->mode && @$sheduleSave->date && @$sheduleSave->working_day){
+                                            $body .= "<br> - Se ha asignado la asignatura " . $sheduleSave->subject .
+                                            " con modalidad " . $sheduleSave->mode . " el día " . $sheduleSave->date . " en la jornada " . $sheduleSave->working_day . ".";
+                                        }  
+                                    }
+                                }
+                                $this->notificationSave($body);
+
                                 DB::commit();
                             }
-
-                            
-
-                        } catch (ErrorException $e){
-                            DB::rollback();
-
-                            Log::notice('Error al guardar', ["message" => $e->getMessage(), 
-                            "line" => $e->getLine(),
-                            "controller" => $e->getFile()]);
-                            Notification::make()
-                            ->title('Error al intental guardar')
-                            ->icon('icon-Alerta')
-                            ->danger()
-                            ->persistent()
-                            ->send();
+                        } else {
                             //detiene el proceso para que no se cierre el formulario
                             $action->halt();
                         }
-                    } else {
+                        
+
+                    } catch (ErrorException $e){
+                        DB::rollback(); 
+
                         // Notificación o mensaje si hay conflicto
                         Notification::make()
                             ->title('Conflicto de Horario')
@@ -166,9 +166,12 @@ class ManageSchedules extends ManageRecords
                             ->danger()
                             ->persistent()
                             ->send();
+                       
                         //detiene el proceso para que no se cierre el formulario
                         $action->halt();
                     }
+                   
+                   
                     //se envia la accion de cancelar para que no guarde los datos ya que se realizarón los cambios
                     $action->cancel();
                 })

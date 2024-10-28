@@ -9,7 +9,7 @@ use PHPUnit\Framework\MockObject\Rule\Parameters;
 
 class Helper
 {
-    public static function validarConflictos($mode, $cetap, $existingModes, $working_day, $existingworking_days, $existingCetaps, $existingSchedule, $action)
+    public static function validarConflictos($mode, $cetap, $existingModes, $working_day, $existingworking_days, $existingCetaps, $existingSchedule, $action = null)
     {
         // Utilizar un switch para manejar los casos de modo
         switch ($mode) {
