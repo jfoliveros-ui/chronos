@@ -21,7 +21,7 @@ class ScheduleResource extends Resource
     protected static ?string $navigationIcon = 'icon-calendar';
 
     protected static ?string $navigationLabel = 'Consulta de Horario';
-    
+
     public static function getPluralModelLabel(): string
     {
         return __('filament.resources.schedules');
@@ -74,6 +74,15 @@ class ScheduleResource extends Resource
                 Tables\Columns\TextColumn::make('mode')
                     ->label('Modalidad')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('commission')
+                    ->label('Comisión')
+                    ->sortable()
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'Asignada' => 'warning',
+                        'Cumplida' => 'success',
+                        'No Cumplida' => 'danger',
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado')
                     ->dateTime()

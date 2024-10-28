@@ -27,7 +27,7 @@ class TeacherPanelProvider extends PanelProvider
             ->path('teacher')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => '#0b22c7',
             ])
             ->brandLogo(asset('img/logo.jpg'))
             ->brandLogoHeight(fn () => auth()->check() ? '4rem' : '5.5rem')

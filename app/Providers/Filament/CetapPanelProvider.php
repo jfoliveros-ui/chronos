@@ -27,7 +27,7 @@ class CetapPanelProvider extends PanelProvider
             ->path('cetap')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => '#5d0ce3',
             ])
             ->brandLogo(asset('img/logo.jpg'))
             ->brandLogoHeight(fn () => auth()->check() ? '4rem' : '5.5rem')

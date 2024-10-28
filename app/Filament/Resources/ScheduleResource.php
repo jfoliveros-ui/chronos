@@ -166,6 +166,15 @@ class ScheduleResource extends Resource
                 Tables\Columns\TextColumn::make('mode')
                     ->label('Modalidad')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('commission')
+                    ->label('Comisión')
+                    ->sortable()
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'Asignada' => 'warning',
+                        'Cumplida' => 'success',
+                        'No Cumplida' => 'danger',
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado')
                     ->dateTime()
