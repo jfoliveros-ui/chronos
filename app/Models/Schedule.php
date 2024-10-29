@@ -17,12 +17,18 @@ class Schedule extends Model
         'teacher_id',
         'date',
         'mode',
-        'working_day'
+        'working_day',
+        'commission'
     ];
 
     // Definir la relación con Teacher
     public function teacher()
     {
         return $this->belongsTo(Teacher::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

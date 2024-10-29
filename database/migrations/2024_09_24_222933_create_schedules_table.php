@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('mode')->comment('Modalidad de la clase - Precencial o Virtual');
             $table->date('date')->comment('fecha que se presentara el docente');
             $table->string('working_day')->comment('Jornada que se presenta el docente.');
+            $table->enum('commission', ['Asignada','Cumplida', 'No Cumplida'])->comment('estado de la comisión')->default('Asignada');
             $table->timestamps();
         });
     }
