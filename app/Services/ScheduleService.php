@@ -72,35 +72,69 @@ trait ScheduleService {
         return 0;
     }
 
+    public function createArrayJondadeEndWorkingDay($data, $arrayEntity){
+        $scheduleSaveArray = [];
+        $dates = Carbon::parse($arrayEntity['date']); // Parsear la fecha
+        $dayOfWeek = $dates->dayOfWeek; // Obtener el día de la semana (0=Domingo, 5=Viernes, 6=Sábado)
+        if ($dayOfWeek == '5') {
+            $data['working_day'] = 'Noche';
+            $data['date'] = $dates->copy();;
+            $scheduleSaveArray[] = $data;
+
+            //Sabado
+            $data['date'] = $dates->copy()->addDay(); // Sumar un día
+            $data['working_day'] = 'Mañana';
+            $scheduleSaveArray[] = $data;
+
+            $data['working_day'] = 'Tarde';
+            $scheduleSaveArray[] = $data;
+
+            //Domingo
+            $data['date'] = $dates->copy()->addDays(2); // Sumar un día
+            $data['working_day'] = 'Mañana';
+            $scheduleSaveArray[] = $data;
+        } 
+       
+        return $scheduleSaveArray;
+    }
+
+    public function validationJornadeEndWorkingDay($data){
+        $message = "";
+       
+        foreach($data as $Schedule){
+            $dates = $Schedule['date'];
+            $existingSchedules = Schedule::where('teacher_id', $Schedule['teacher_id'])
+            ->where('working_day', $Schedule['working_day'])
+            ->where('date', $dates)
+            ->first(); 
+
+            if($existingSchedules){
+
+                if(empty($message)){
+                    $message = "De acuerdo a la jornada Fin de semana hay error en las siguientes fechas: ";
+                }
+                $message .= "<br> - " . $existingSchedules->date . " en la jornada " . 
+                $existingSchedules->working_day . " en el semestre : " . $existingSchedules->semester . " ya existe.";
+            }
+        }
+
+        return $message;
+    }
+
     /**
      * Función para crear asignación de horario si es fin de semana
      * @param Array
      * @return Array
      */
     public function CreateJornadeFinOworkingDay($data){
-
+        
         $scheduleSaveArray = [];
-        $dates = Carbon::parse($data['date']); // Parsear la fecha
-        $dayOfWeek = $dates->dayOfWeek; // Obtener el día de la semana (0=Domingo, 5=Viernes, 6=Sábado)
-        //dd($dayOfWeek);
-        Log::notice('DayOfWeek', [$dayOfWeek]);
-        if ($dayOfWeek == '5') {
-            $data['working_day'] = 'Noche';
-            $scheduleSaveArray[] = $this->createSchedule($data);
-
-            //Sabado
-            $data['date'] = $dates->addDay(); // Sumar un día
-            $data['working_day'] = 'Mañana';
-            $scheduleSaveArray[] = $this->createSchedule($data);
-
-            $data['working_day'] = 'Tarde';
-            $scheduleSaveArray[] = $this->createSchedule($data);
-
-            //Domingo
-            $data['date'] = $dates->addDay(); // Sumar un día
-            $data['working_day'] = 'Mañana';
-            $scheduleSaveArray[] = $this->createSchedule($data);
-        } 
+        
+        
+        foreach($data as $schedule){
+            $scheduleSaveArray[] = $this->createSchedule($schedule);
+            
+        }
 
         if (in_array(null, $scheduleSaveArray, true)) {
             return null;
@@ -166,11 +200,22 @@ trait ScheduleService {
                 $existingCetap->working_day . " en el semestre : " . $existingCetap->semester . "";
                
             } else {
+                
+                if($data['working_day'] == "Fin de Semana"){
+                    $arraySchedule = $this->createArrayJondadeEndWorkingDay($data, $dateEntry);
+                    $message = $this->validationJornadeEndWorkingDay($arraySchedule);
+                    if(!empty($message)){
+                        $body .= $message;
+                    } 
 
-                // Buscar todos los registros con el mismo teacher_id y date
-                $existingSchedules = Schedule::where('teacher_id', $data['teacher_id'])
-                ->where('date', $dates)
-                ->first(); 
+                    goto endValidation;
+                    
+                } else {
+                    $existingSchedules = Schedule::where('teacher_id', $data['teacher_id'])
+                        ->where('working_day', $data['working_day'])
+                        ->where('date', $dates)
+                        ->first(); 
+                }
 
                 if ($existingSchedules){
                     if(empty($body)){
@@ -181,6 +226,8 @@ trait ScheduleService {
                     $body .= "<br> - " . $existingSchedules->date . " en la jornada " . 
                     $existingSchedules->working_day . " en el semestre : " . $existingSchedules->semester . "";
                 }
+
+                endValidation:
             }            
         }
      

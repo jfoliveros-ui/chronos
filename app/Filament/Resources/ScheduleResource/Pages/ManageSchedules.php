@@ -108,7 +108,10 @@ class ManageSchedules extends ManageRecords
     
                                 if($working_day == "Fin de Semana"){
                                     // Guardar un registro por cada fecha
-                                    $scheduleCreate = $this->CreateJornadeFinOworkingDay($dataSchedule);
+                                    $arraySchedule = $this->createArrayJondadeEndWorkingDay($dataSchedule, $dateEntry);
+
+                                    $scheduleCreate = $this->CreateJornadeFinOworkingDay($arraySchedule);
+                                    
                                     $scheduleSaveArray[] = $scheduleCreate;
                                 } else {
                                     // Guardar un registro por cada fecha
