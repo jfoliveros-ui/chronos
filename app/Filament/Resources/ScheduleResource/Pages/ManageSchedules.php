@@ -4,10 +4,12 @@ namespace App\Filament\Resources\ScheduleResource\Pages;
 
 use App\Filament\Resources\ScheduleResource;
 use App\Helpers\Helper;
+use App\Mail\Shedule;
 use App\Models\CosumedHours;
 use App\Models\Parameter;
 use App\Models\Schedule;
 use App\Models\Teacher;
+use App\Models\User;
 use App\Services\ScheduleService;
 use ErrorException;
 use Filament\Notifications\Actions\Action;
@@ -17,6 +19,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class ManageSchedules extends ManageRecords
 {
@@ -64,7 +67,7 @@ class ManageSchedules extends ManageRecords
                         $existingCetaps = []; // Guardar los centros de tutoria del programa
 
                         if (!$existingCetap->isNotEmpty()) {
-                           
+
                             // Si existen asignaciones previas ($existingSchedules no está vacío)
                             if ($existingSchedules->isNotEmpty()) {
                                 // Iterar sobre todos los horarios existentes y guardar los modos y días en arrays
@@ -81,16 +84,16 @@ class ManageSchedules extends ManageRecords
                             }
                         }
                     }
-                   
-                    try{
+
+                    try {
                         DB::beginTransaction();
                         $scheduleSaveArray = [];
 
                         //REalizar validación antes de guardar
                         $validate = $this->validateExistShedule($data);
 
-                        
-                        if($validate || $hasConflict){
+
+                        if ($validate || $hasConflict) {
                             foreach ($date as $dateEntry) {
                                 $scheduleCreate = null;
                                 //crear datos para almacenar como schedule
@@ -103,58 +106,70 @@ class ManageSchedules extends ManageRecords
                                     'subject' => $subject,
                                     'semester' => $semestre,
                                 ];
-    
-                                
-    
-                                if($working_day == "Fin de Semana"){
+
+
+
+                                if ($working_day == "Fin de Semana") {
                                     // Guardar un registro por cada fecha
                                     $arraySchedule = $this->createArrayJondadeEndWorkingDay($dataSchedule, $dateEntry);
 
                                     $scheduleCreate = $this->CreateJornadeFinOworkingDay($arraySchedule);
-                                    
+
                                     $scheduleSaveArray[] = $scheduleCreate;
                                 } else {
                                     // Guardar un registro por cada fecha
                                     $scheduleCreate = $this->createSchedule($dataSchedule);
                                     $scheduleSaveArray[] = $scheduleCreate;
                                 }
-    
                             }
-    
+
                             if (in_array(null, $scheduleSaveArray, true)) {
                                 DB::rollback();
                                 $action->halt();
                             } else {
                                 $body = "";
-                                
-                                foreach($scheduleSaveArray as $sheduleSave){
 
-                                    if(is_array($sheduleSave)){
-                                        foreach($sheduleSave as $sheduleS){
-                                            if(@$sheduleS->subject && @$sheduleS->mode && @$sheduleS->date && @$sheduleS->working_day){
+                                foreach ($scheduleSaveArray as $sheduleSave) {
+
+                                    if (is_array($sheduleSave)) {
+                                        foreach ($sheduleSave as $sheduleS) {
+                                            if (@$sheduleS->subject && @$sheduleS->mode && @$sheduleS->date && @$sheduleS->working_day) {
                                                 $body .= "<br> - Se ha asignado la asignatura " . $sheduleS->subject .
-                                                " con modalidad " . $sheduleS->mode . " el día " . $sheduleS->date . " en la jornada " . $sheduleS->working_day . ".";
-                                            }  
+                                                    " con modalidad " . $sheduleS->mode . " el día " . $sheduleS->date . " en la jornada " . $sheduleS->working_day . ".";
+                                            }
                                         }
                                     } else {
-                                        if(@$sheduleSave->subject && @$sheduleSave->mode && @$sheduleSave->date && @$sheduleSave->working_day){
+                                        if (@$sheduleSave->subject && @$sheduleSave->mode && @$sheduleSave->date && @$sheduleSave->working_day) {
                                             $body .= "<br> - Se ha asignado la asignatura " . $sheduleSave->subject .
-                                            " con modalidad " . $sheduleSave->mode . " el día " . $sheduleSave->date . " en la jornada " . $sheduleSave->working_day . ".";
-                                        }  
+                                                " con modalidad " . $sheduleSave->mode . " el día " . $sheduleSave->date . " en la jornada " . $sheduleSave->working_day . ".";
+                                        }
                                     }
                                 }
                                 $this->notificationSave($body);
 
                                 DB::commit();
+                                // Enviar el correo
+
+                                $user = User::find(1);
+
+                                // Compilar todas las fechas en una cadena separada por comas
+                                $dates = is_array($data['dates']) ? implode(', ', array_column($data['dates'], 'date')) : $data['dates'];
+                                $dataToSend = array(
+                                    'cetap' => $data['cetap'],
+                                    'subject' => $data['subject'],
+                                    'working_day' => $data['working_day'],
+                                    'dates' => $dates, // Usar la cadena de fechas compiladas
+                                    'mode' => $data['mode'],
+                                );
+
+                                Mail::to($user)->send(new Shedule($dataToSend));
                             }
                         } else {
                             //detiene el proceso para que no se cierre el formulario
                             $action->halt();
                         }
-                        
-
-                    } catch (ErrorException $e){
-                        DB::rollback(); 
+                    } catch (ErrorException $e) {
+                        DB::rollback();
 
                         // Notificación o mensaje si hay conflicto
                         Notification::make()
@@ -169,12 +184,10 @@ class ManageSchedules extends ManageRecords
                             ->danger()
                             ->persistent()
                             ->send();
-                       
+
                         //detiene el proceso para que no se cierre el formulario
                         $action->halt();
                     }
-                   
-                   
                     //se envia la accion de cancelar para que no guarde los datos ya que se realizarón los cambios
                     $action->cancel();
                 })
